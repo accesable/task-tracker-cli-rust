@@ -1,4 +1,5 @@
 use std::env;
+use std::io::{self, Result};
 fn main() {
     // Collect the command-line arguments into a vector
     let args: Vec<String> = env::args().collect();
@@ -6,24 +7,63 @@ fn main() {
     // Print all the arguments
     println!("Command-line arguments: {:?}", args);
 
-    // Check if there are any arguments
-    if args.len() > 2 {
-        // Access individual arguments
-        println!("Argument 1: {}", args[1]);
-        resolving_args(args);
-    } else {
-        println!("No arguments provided.");
+    match resolving_args(args) {
+        Ok((operation, task_id, task_name)) => {
+            println!("Operation: {}, Task ID: {}, Task Name: {}", operation, task_id, task_name);
+        }
+        Err(e) => {
+            eprintln!("Error: {}", e);
+        }
     }
 }
 
-fn resolving_args(args : Vec<String>) -> (String, u32, String) {
-    let operation : String = args[1].clone();
-    let task_id : u32 = 0;
-    let mut task_name : String = String::new();
 
-    if operation == "add" || operation == "list" {
-        task_name = args[2].clone();
-        println!("new task added : {}",task_name);
+fn resolving_args(args: Vec<String>) -> Result<(String, u32, String)> {
+    if args.len() < 2 {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Not enough arguments"));
     }
-    (operation,task_id,task_name)
+
+    let operation: String = args[1].clone();
+    let mut task_id: u32 = 0;
+    let mut task_name: String = String::new();
+
+    if operation == "add" && args.len() == 3 {
+        task_name = args[2].clone();
+        println!("New task added: {}", task_name);
+    } else if operation == "list" {
+        if args.len() == 2 {
+            println!("List all tasks");
+        } else {
+            task_name = args[2].clone();
+
+            match task_name.as_str() {
+                "done" => println!("List all done tasks"),
+                "todo" => println!("List all todo tasks"),
+                "in-progress" => println!("List all in-progress tasks"),
+                _ => return Err(io::Error::new(io::ErrorKind::InvalidInput, "Invalid task state")),
+            }
+        }
+    } else if args.len() > 3 {
+        // Handle invalid task ID
+        task_id = match args[2].parse::<u32>() {
+            Ok(id) => id,
+            Err(_) => {
+                return Err(io::Error::new(io::ErrorKind::InvalidInput, "Invalid task ID: Task ID should be a valid positive number"));
+            }
+        };
+        if operation == "update" {
+            task_name = args[3].clone();
+        }
+
+        match operation.as_str() {
+            "update" => println!("Update id {} with name {}", task_id, task_name),
+            "mark-done" => println!("Mark task id {} as done", task_id),
+            "mark-in-progress" => println!("Mark task id {} as in-progress", task_id),
+            _ => return Err(io::Error::new(io::ErrorKind::InvalidInput, "Invalid operation")),
+        }
+    } else {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Invalid number of arguments"));
+    }
+
+    Ok((operation, task_id, task_name))
 }
