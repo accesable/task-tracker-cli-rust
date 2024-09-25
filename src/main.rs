@@ -1,5 +1,10 @@
 use std::env;
 use std::io::{self, Result};
+// Declare the module
+mod task;
+
+// Import Task and TaskStatus from the task module
+use task::{Task, TaskStatus};
 fn main() {
     // Collect the command-line arguments into a vector
     let args: Vec<String> = env::args().collect();
@@ -43,7 +48,7 @@ fn resolving_args(args: Vec<String>) -> Result<(String, u32, String)> {
                 _ => return Err(io::Error::new(io::ErrorKind::InvalidInput, "Invalid task state")),
             }
         }
-    } else if args.len() > 3 {
+    } else {
         // Handle invalid task ID
         task_id = match args[2].parse::<u32>() {
             Ok(id) => id,
@@ -59,11 +64,9 @@ fn resolving_args(args: Vec<String>) -> Result<(String, u32, String)> {
             "update" => println!("Update id {} with name {}", task_id, task_name),
             "mark-done" => println!("Mark task id {} as done", task_id),
             "mark-in-progress" => println!("Mark task id {} as in-progress", task_id),
+            "delete" => println!("Delete task id {}",task_id),
             _ => return Err(io::Error::new(io::ErrorKind::InvalidInput, "Invalid operation")),
         }
-    } else {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Invalid number of arguments"));
-    }
-
+    } 
     Ok((operation, task_id, task_name))
 }
