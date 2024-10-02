@@ -1,5 +1,9 @@
 use std::env;
-use std::io::{self, Result};
+use std::fs;
+use std::fs::File;
+use std::io::BufRead;
+use std::io::BufReader;
+use std::io::{self,Write,Result};
 // Declare the module
 mod task;
 
@@ -12,17 +16,68 @@ fn main() {
     // Print all the arguments
     println!("Command-line arguments: {:?}", args);
 
-    match resolving_args(args) {
-        Ok((operation, task_id, task_name)) => {
-            println!("Operation: {}, Task ID: {}, Task Name: {}", operation, task_id, task_name);
+    //match resolving_args(args) {
+    //    Ok((operation, task_id, task_name)) => {
+    //        println!("Operation: {}, Task ID: {}, Task Name: {}", operation, task_id, task_name);
+    //        if operation == "add" {
+    //            let task = Task::new(0, task_name, TaskStatus::InProgress);
+    //            let serialize_json = task.serialize_task();
+    //            match write_to_file("test.json", &serialize_json) {   
+    //                Ok(_) => println!("task added"),
+    //                Err(e) => println!("An error occured : {} ",e)
+    //            }; 
+    //        }
+    //    }
+    //    Err(e) => {
+    //        eprintln!("Error: {}", e);
+    //    }
+    //}
+    let _ = read_file("test.csv");
+}
+
+fn read_file(file_path : &str) -> Result<()>{
+    let file = File::open(file_path)?;
+    let buff_reader = BufReader::new(file);
+
+    let mut lines = buff_reader.lines();
+
+
+// Skip the first line (header)
+    if let Some(_) = lines.next() {
+        // Read the remaining lines
+        for line in lines {
+        match line {
+           Ok(content) => println!("{}", content),
+            Err(e) => eprintln!("Error reading line: {}", e), 
         }
+        }
+    }
+    Ok(())
+}
+
+fn write_to_file(filename: &str, content: &str) -> Result<bool> {
+    // Open the file in append mode
+    let mut file = match fs::OpenOptions::new()
+        .append(true) // Append to the file
+        .create(true) // Create the file if it doesn't exist
+        .open(filename)
+    {
+        Ok(file) => file,
         Err(e) => {
-            eprintln!("Error: {}", e);
+            eprintln!("Error opening the file: {}", e);
+            return Err(e);
+        }
+    };
+
+    // Attempt to write to the file
+    match file.write_all(content.as_bytes()) {
+        Ok(_) => Ok(true),  // Return Ok(true) if writing succeeds
+        Err(e) => {
+            eprintln!("Error writing to the file: {}", e);
+            Err(e)  // Return the error if writing fails
         }
     }
 }
-
-
 fn resolving_args(args: Vec<String>) -> Result<(String, u32, String)> {
     if args.len() < 2 {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "Not enough arguments"));
